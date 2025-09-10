@@ -149,6 +149,46 @@ window.colorSchemes = {
     ],
     nodeColor: '#F1F8E9',
     branchNodeColor: '#8BC34A'
+  },
+  // 🐍 LOKI THEMES - Inspired by the God of Mischief 🐍
+  lokiWorldTree: {
+    baseColor: '#0A4D3A',
+    gradient: [
+      { pos: 0.0, color: '#0A4D3A' },
+      { pos: 0.2, color: '#1B5E20' },
+      { pos: 0.4, color: '#2E7D32' },
+      { pos: 0.6, color: '#4CAF50' },
+      { pos: 0.8, color: '#81C784' },
+      { pos: 1.0, color: '#C8E6C9' }
+    ],
+    nodeColor: '#E8F5E8',
+    branchNodeColor: '#66BB6A'
+  },
+  lokiTVA: {
+    baseColor: '#8B4513',
+    gradient: [
+      { pos: 0.0, color: '#3E2723' },
+      { pos: 0.2, color: '#5D4037' },
+      { pos: 0.4, color: '#8D6E63' },
+      { pos: 0.6, color: '#FF8F00' },
+      { pos: 0.8, color: '#FFB300' },
+      { pos: 1.0, color: '#FFCC02' }
+    ],
+    nodeColor: '#FFF8E1',
+    branchNodeColor: '#FF8F00'
+  },
+  lokiMischief: {
+    baseColor: '#1B5E20',
+    gradient: [
+      { pos: 0.0, color: '#1B5E20' },
+      { pos: 0.3, color: '#2E7D32' },
+      { pos: 0.5, color: '#4CAF50' },
+      { pos: 0.7, color: '#8BC34A' },
+      { pos: 0.9, color: '#CDDC39' },
+      { pos: 1.0, color: '#FFEB3B' }
+    ],
+    nodeColor: '#F1F8E9',
+    branchNodeColor: '#689F38'
   }
 };
 
@@ -221,6 +261,40 @@ window.treePresets = [
     baseAngle: 35, 
     trunkTextureEnabled: true, 
     nodeSize: 5 
+  },
+  // 🐍 LOKI COLLECTION - For All Time. Always. 🐍
+  { 
+    name: '🌳 World Tree', 
+    color: 'lokiWorldTree', 
+    stemLength: 180, 
+    initialLength: 85, 
+    lengthDecay: 0.75, 
+    baseAngle: 38, 
+    trunkTextureEnabled: true,
+    showPruning: true,
+    nodeSize: 4
+  },
+  { 
+    name: '🕰️ TVA Timeline', 
+    color: 'lokiTVA', 
+    stemLength: 160, 
+    initialLength: 95, 
+    lengthDecay: 0.68, 
+    baseAngle: 42, 
+    trunkTextureEnabled: true,
+    showPruning: true,
+    nodeSize: 3.5
+  },
+  { 
+    name: '✨ God of Mischief', 
+    color: 'lokiMischief', 
+    stemLength: 145, 
+    initialLength: 110, 
+    lengthDecay: 0.72, 
+    baseAngle: 45, 
+    trunkTextureEnabled: false,
+    showPruning: true,
+    nodeSize: 4.5
   }
 ];
 

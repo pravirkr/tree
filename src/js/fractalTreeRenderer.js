@@ -148,17 +148,49 @@ window.FractalTreeRenderer = class FractalTreeRenderer {
   }
   
   drawBranch(startX, startY, endX, endY, width, color, isPruned = false) {
+    if (isPruned && this.config.showPruning) {
+      // Pruned branches with dashed/faded effect
+      this.ctx.setLineDash([width * 2, width * 1.5]);
+      this.ctx.globalAlpha = 0.6;
+      this.ctx.lineCap = 'round';
+    } else {
+      this.ctx.setLineDash([]);
+      this.ctx.globalAlpha = 1.0;
+      this.ctx.lineCap = 'round';
+    }
+    
     this.ctx.beginPath();
     this.ctx.moveTo(startX, startY);
     this.ctx.lineTo(endX, endY);
     this.ctx.strokeStyle = isPruned ? this.config.pruneColor : color;
     this.ctx.lineWidth = width;
     this.ctx.stroke();
-    this.svgPaths.push(`<line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="${isPruned ? this.config.pruneColor : color}" stroke-width="${width}"/>`);
+    
+    // Reset line dash and alpha
+    this.ctx.setLineDash([]);
+    this.ctx.globalAlpha = 1.0;
+    
+    const strokeDashArray = isPruned ? `stroke-dasharray="${width * 2},${width * 1.5}"` : '';
+    const opacity = isPruned ? 'opacity="0.6"' : '';
+    this.svgPaths.push(`<line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="${isPruned ? this.config.pruneColor : color}" stroke-width="${width}" stroke-linecap="round" ${strokeDashArray} ${opacity}/>`);
   }
   
   drawNode(x, y, radius, color, isBranchNode = false, isPruned = false) {
     if (!this.config.showNodes) return;
+    
+    // Enhanced node rendering with glow effects
+    if (isPruned && this.config.showPruning) {
+      // Pruned nodes get a subtle glow effect
+      const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, radius * 2);
+      gradient.addColorStop(0, this.config.pruneColor + '80'); // Semi-transparent
+      gradient.addColorStop(0.7, this.config.pruneColor + '40');
+      gradient.addColorStop(1, this.config.pruneColor + '00'); // Fully transparent
+      
+      this.ctx.fillStyle = gradient;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, radius * 2, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
     
     this.ctx.beginPath();
     this.ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -167,10 +199,19 @@ window.FractalTreeRenderer = class FractalTreeRenderer {
     this.svgPaths.push(`<circle cx="${x}" cy="${y}" r="${radius}" fill="${isPruned ? this.config.pruneColor : color}"/>`);
     
     if (isBranchNode && this.config.highlightBranchNodes && !isPruned) {
-      this.ctx.lineWidth = 0.5;
+      // Enhanced branch node highlighting
+      this.ctx.lineWidth = 1;
       this.ctx.strokeStyle = '#ffffff';
       this.ctx.stroke();
-      this.svgPaths.push(`<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="#ffffff" stroke-width="0.5"/>`);
+      
+      // Add inner glow for branch nodes
+      const innerGradient = this.ctx.createRadialGradient(x, y, 0, x, y, radius);
+      innerGradient.addColorStop(0, '#ffffff40');
+      innerGradient.addColorStop(1, '#ffffff00');
+      this.ctx.fillStyle = innerGradient;
+      this.ctx.fill();
+      
+      this.svgPaths.push(`<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="#ffffff" stroke-width="1"/>`);
     }
   }
   

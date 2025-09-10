@@ -6,6 +6,7 @@ const EnhancedFractalTree = () => {
   const canvasRef = React.useRef(null);
   const [svgPaths, setSvgPaths] = React.useState([]);
   const [isSavingGif, setIsSavingGif] = React.useState(false);
+  const [pruningStats, setPruningStats] = React.useState({ total: 0, pruned: 0, survival: 0 });
 
   const [config, setConfig] = React.useState(window.defaultConfig);
 
@@ -25,6 +26,25 @@ const EnhancedFractalTree = () => {
     const renderer = new window.FractalTreeRenderer(canvas, config);
     const newSvgPaths = renderer.render();
     setSvgPaths(newSvgPaths);
+    
+    // Calculate pruning statistics
+    if (config.showPruning) {
+      let totalBranches = 0;
+      let prunedBranches = 0;
+      
+      for (let depth = 0; depth < Math.min(config.survivalProb.length, 10); depth++) {
+        const branchFactor = config.branchingPattern[depth] || 1;
+        const survivalRate = config.survivalProb[depth];
+        totalBranches += branchFactor;
+        prunedBranches += Math.floor(branchFactor * (1 - survivalRate));
+      }
+      
+      setPruningStats({
+        total: totalBranches,
+        pruned: prunedBranches,
+        survival: ((totalBranches - prunedBranches) / totalBranches * 100).toFixed(1)
+      });
+    }
   }, [config]);
 
   const saveAsImage = () => {
@@ -100,10 +120,18 @@ const EnhancedFractalTree = () => {
 
   return React.createElement('div', { className: "container mx-auto py-8" },
     React.createElement('header', { className: "mb-8" },
-      React.createElement('h1', { className: "text-4xl font-bold text-center text-gray-800" }, 'Yggdrasil Fractal Tree'),
-      React.createElement('p', { className: "text-center text-gray-600 mt-2" },
-        'An interactive fractal tree visualization inspired by the World Tree'
-      )
+      React.createElement('h1', { 
+        className: "text-4xl font-bold text-center text-gray-800 mb-2",
+        style: { 
+          background: 'linear-gradient(135deg, #2E7D32, #4CAF50, #8BC34A)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }
+      }, 'Loki: Yggdrasil World Tree'),
+      React.createElement('p', { className: "text-center text-gray-600 mt-2 text-lg" },
+        'Pruning Algorithm Visualization • "For All Time. Always."'
+      ),
     ),
 
     React.createElement('div', { className: "flex flex-col xl:flex-row gap-8" },
@@ -112,7 +140,7 @@ const EnhancedFractalTree = () => {
           ref: canvasRef,
           width: config.canvasWidth,
           height: config.canvasHeight,
-          className: "w-full h-auto"
+          className: `w-full h-auto ${config.colorScheme.includes('loki') ? 'loki-glow' : ''}`
         }),
         React.createElement('div', { className: "mt-4 flex justify-center gap-4" },
           React.createElement('button', {
@@ -313,9 +341,32 @@ const EnhancedFractalTree = () => {
                   type: "checkbox",
                   checked: config.showPruning,
                   onChange: (e) => updateConfig('showPruning', e.target.checked),
-                  className: "h-4 w-4 text-blue-600 border-gray-300 rounded"
+                  className: "h-4 w-4 text-red-600 border-gray-300 rounded"
                 }),
-                React.createElement('label', { className: "ml-2 text-sm text-gray-600" }, 'Show Pruning')
+                React.createElement('label', { className: "ml-2 text-sm text-gray-600" }, '🔥 Timeline Pruning')
+              ),
+              
+              // Pruning Statistics Panel
+              config.showPruning && React.createElement('div', { 
+                className: "mt-4 p-4 bg-red-50 border border-red-200 rounded-lg" 
+              },
+                React.createElement('h4', { className: "text-sm font-semibold text-red-800 mb-2" }, 
+                  '📊 Pruning Algorithm Stats'
+                ),
+                React.createElement('div', { className: "space-y-1 text-xs" },
+                  React.createElement('div', { className: "flex justify-between" },
+                    React.createElement('span', { className: "text-red-700" }, 'Branches Analyzed:'),
+                    React.createElement('span', { className: "font-mono text-red-900" }, pruningStats.total)
+                  ),
+                  React.createElement('div', { className: "flex justify-between" },
+                    React.createElement('span', { className: "text-red-700" }, 'Timelines Pruned:'),
+                    React.createElement('span', { className: "font-mono text-red-900" }, pruningStats.pruned)
+                  ),
+                  React.createElement('div', { className: "flex justify-between" },
+                    React.createElement('span', { className: "text-red-700" }, 'Survival Rate:'),
+                    React.createElement('span', { className: "font-mono text-red-900" }, `${pruningStats.survival}%`)
+                  )
+                )
               )
             )
           ),
@@ -376,8 +427,23 @@ const EnhancedFractalTree = () => {
     ),
 
     React.createElement('footer', { className: "mt-8 text-center text-gray-600" },
-      React.createElement('p', null, 'Built with React & Tailwind CSS'),
-      React.createElement('p', null, 'Inspired by the mythological Yggdrasil, the World Tree')
+      config.showPruning ? 
+        React.createElement('div', { className: "bg-gradient-to-r from-red-50 to-orange-50 p-4 rounded-lg border border-red-200" },
+          React.createElement('p', { className: "text-red-800 font-medium italic text-lg mb-2" }, 
+            '"I keep playing and the play becomes the thing." - Loki'
+          ),
+          React.createElement('p', { className: "text-red-600 text-sm" }, 
+            '⚡ Timeline Pruning Algorithm Active • TVA Would Be Proud'
+          )
+        ) :
+        React.createElement('div', null,
+          React.createElement('p', { className: "text-green-700 font-medium italic text-lg mb-2" }, 
+            '"Before there was time, before there was anything, there was nothing."'
+          ),
+          React.createElement('p', { className: "text-gray-600 text-sm" }, 
+            '🌳 Inspired by Yggdrasil, the World Tree from Norse Mythology'
+          )
+        )
     )
   );
 };
