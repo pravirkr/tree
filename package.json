@@ -1,0 +1,37 @@
+{
+  "name": "tree-visualization",
+  "version": "1.0.0",
+  "description": "Pruning tree visualization",
+  "main": "src/js/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "live-server src --port=3000 --open=/",
+    "build": "npm run clean && npm run copy-assets && npm run bundle",
+    "clean": "rm -rf dist",
+    "copy-assets": "mkdir -p dist && cp -r src/* dist/",
+    "bundle": "echo 'Build process - you can add bundling tools like Vite or Webpack here'",
+    "lint": "eslint src/js/**/*.js",
+    "format": "prettier --write src/**/*.{html,css,js}",
+    "start": "npm run dev"
+  },
+  "keywords": [
+    "tree",
+    "visualization",
+    "javascript",
+    "svg",
+    "data-visualization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5"
+  },
+  "dependencies": {
+    "d3": "^7.8.5"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

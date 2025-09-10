@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yggdrasil Fractal Tree</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React and ReactDOM CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+  <!-- Babel for JSX -->
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.15/babel.min.js"></script>
+  <link rel="stylesheet" href="index.css" />
+</head>
+
+<body class="bg-gray-100 min-h-screen flex justify-center items-start">
+  <div id="root"></div>
+  <script type="text/babel">
+    console.log("Loading EnhancedFractalTree...");
+    const EnhancedFractalTree = () => {
+      const canvasRef = React.useRef(null);
+      const [svgPaths, setSvgPaths] = React.useState([]);
+      const [isSavingGif, setIsSavingGif] = React.useState(false);
+
+      const [config, setConfig] = React.useState({
+        canvasWidth: 1000,
+        canvasHeight: 800,
+        startX: 500,
+        startY: 700,
+        stemLength: 150,
+        stemWidth: 14,
+        initialLength: 65,
+        initialWidth: 12,
+        lengthDecay: 0.83,
+        widthDecay: 0.75,
+        nodeSize: 3,
+        baseAngle: 40,
+        bgColor: '#f8f8f8',
+        pruneColor: "#99a39c", //'#fcfafa',
+        colorScheme: 'autumn',
+        showNodes: true,
+        highlightBranchNodes: true,
+        trunkTextureEnabled: true,
+        acceleratedDecay: false,
+        minBranchLength: 1,
+        maxDepthRender: 50,
+        zoomLevel: 1,
+        exportFormat: 'png-1x',
+        showPruning: false,
+        // For accel
+        survivalProb: [
+          0.93, 0.97, 0.89, 0.82, 0.51, 0.63, 0.67, 0.64, 0.84, 0.83, 0.94,
+          0.72, 0.64, 0.78, 0.64, 0.87, 0.53, 0.91, 0.58, 0.56, 0.86, 0.91,
+          0.94, 0.96, 0.52, 0.78, 0.9, 0.88, 0.86, 0.95, 0.96, 0.8, 0.94,
+          0.99, 0.99, 0.83, 0.99, 0.93, 0.94, 0.98, 0.99, 0.83, 0.9, 0.95,
+          0.85, 0.99, 0.96, 0.84, 0.92, 1.0, 0.88, 0.98, 0.9, 0.93, 0.86,
+          1.0, 0.77, 0.96, 0.8, 1.0, 0.86, 0.9, 0.83, 0.99, 0.73, 0.99,
+          0.71, 1.0, 0.82, 0.96, 0.87, 0.97, 0.88, 0.97, 0.99, 0.74, 0.97,
+          0.95, 0.86, 0.91, 1.0, 1.0, 0.85, 0.67, 0.89, 1.0, 0.74, 1.0,
+          0.82, 1.0, 0.85, 0.79, 0.9, 0.91, 1.0, 0.75, 1.0, 0.67, 0.97,
+          0.68, 1.0, 0.81, 0.89, 0.98, 0.73, 0.89, 0.9, 0.77, 0.97, 0.99,
+          0.65, 1.0, 0.92, 0.93, 0.64, 0.67, 0.97, 0.82, 0.88, 1.0, 0.85,
+          1.0, 0.71, 0.87, 0.98, 0.86, 1.0
+        ],
+        branchingPattern: [4, 9, 1, 3, 1, 3, 1, 3, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1, 1, 1, 1,
+          1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+
+        /*
+        // For snap
+        survivalProb: [1., 0.99, 1., 1., 0.89, 0.97, 0.87, 0.79, 0.69, 0.63, 0.71,
+          0.59, 0.54, 0.49, 0.38, 0.54, 0.33, 0.77, 0.5, 0.59, 0.82, 0.8,
+          0.95, 0.39, 0.86, 0.46, 0.74, 0.88, 0.46, 0.74, 0.89, 0.92, 0.8,
+          0.47, 0.73, 0.8, 0.79, 0.85, 0.92, 0.78, 0.94, 0.89, 0.96, 1.,
+          0.76, 0.3, 0.42, 0.73, 0.91, 0.94, 0.9, 0.78, 0.98, 0.94, 0.84,
+          0.25, 0.39, 0.99, 0.65, 0.92, 0.99, 1., 0.81, 0.99, 0.82, 0.97,
+          0.83, 0.99, 0.82, 0.97, 0.85, 0.96, 0.72, 0.87, 0.97, 0.7, 1.,
+          0.79, 0.96, 0.92, 0.92, 0.81, 0.89, 0.88, 0.78, 0.71, 0.96, 0.79,
+          0.69, 0.96, 0.62, 0.95, 1., 0.69, 0.99, 0.6, 0.99, 0.76, 1.,
+          0.59, 0.84, 0.86, 0.88, 0.88, 0.97, 1., 0.63, 0.97, 0.94, 0.91,
+          0.79, 0.7, 0.84, 0.87, 1., 0.62, 0.96, 0.92, 0.59, 0.99, 0.73,
+          0.87, 1., 0.62, 0.85, 0.89, 1.
+        ],
+        branchingPattern: [4, 9, 1, 3, 3, 3, 1, 9, 1, 1, 3, 1, 1, 9, 1, 3, 1, 3, 3, 1, 1, 1,
+          1, 3, 9, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 9,
+          1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 3, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1,
+          1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        */
+      });
+
+      const colorSchemes = {
+        autumn: {
+          baseColor: '#8B4513',
+          gradient: [
+            { pos: 0.0, color: '#8B4513' },
+            { pos: 0.3, color: '#A0522D' },
+            { pos: 0.6, color: '#CD853F' },
+            { pos: 0.8, color: '#DEB887' },
+            { pos: 1.0, color: '#F5DEB3' }
+          ],
+          nodeColor: '#FFCC80',
+          branchNodeColor: '#FF8F00'
+        },
+        forest: {
+          baseColor: '#2E7D32',
+          gradient: [
+            { pos: 0.0, color: '#1B5E20' },
+            { pos: 0.3, color: '#2E7D32' },
+            { pos: 0.6, color: '#388E3C' },
+            { pos: 0.8, color: '#43A047' },
+            { pos: 1.0, color: '#66BB6A' }
+          ],
+          nodeColor: '#81C784',
+          branchNodeColor: '#2E7D32'
+        },
+        ocean: {
+          baseColor: '#0D47A1',
+          gradient: [
+            { pos: 0.0, color: '#0D47A1' },
+            { pos: 0.3, color: '#1976D2' },
+            { pos: 0.6, color: '#2196F3' },
+            { pos: 0.8, color: '#64B5F6' },
+            { pos: 1.0, color: '#90CAF9' }
+          ],
+          nodeColor: '#BBDEFB',
+          branchNodeColor: '#1976D2'
+        },
+        sunset: {
+          baseColor: '#BF360C',
+          gradient: [
+            { pos: 0.0, color: '#BF360C' },
+            { pos: 0.3, color: '#E64A19' },
+            { pos: 0.6, color: '#FF7043' },
+            { pos: 0.8, color: '#FFAB91' },
+            { pos: 1.0, color: '#FFCCBC' }
+          ],
+          nodeColor: '#FFCCBC',
+          branchNodeColor: '#FF5722'
+        },
+        monochrome: {
+          baseColor: '#212121',
+          gradient: [
+            { pos: 0.0, color: '#212121' },
+            { pos: 0.3, color: '#424242' },
+            { pos: 0.6, color: '#616161' },
+            { pos: 0.8, color: '#9E9E9E' },
+            { pos: 1.0, color: '#BDBDBD' }
+          ],
+          nodeColor: '#E0E0E0',
+          branchNodeColor: '#616161'
+        },
+        cherry: {
+          baseColor: '#4A1D1C',
+          gradient: [
+            { pos: 0.0, color: '#4A1D1C' },
+            { pos: 0.3, color: '#7D3633' },
+            { pos: 0.6, color: '#AF4F4B' },
+            { pos: 0.8, color: '#D98C88' },
+            { pos: 1.0, color: '#F7C2C0' }
+          ],
+          nodeColor: '#FAE6E5',
+          branchNodeColor: '#9A3734'
+        },
+        maple: {
+          baseColor: '#6B4226',
+          gradient: [
+            { pos: 0.0, color: '#6B4226' },
+            { pos: 0.3, color: '#8D5B3A' },
+            { pos: 0.6, color: '#BB7F5A' },
+            { pos: 0.8, color: '#D9A989' },
+            { pos: 1.0, color: '#F7E0CB' }
+          ],
+          nodeColor: '#F9EDE1',
+          branchNodeColor: '#A76C42'
+        },
+        emerald: {
+          baseColor: '#004D40',
+          gradient: [
+            { pos: 0.0, color: '#004D40' },
+            { pos: 0.3, color: '#00695C' },
+            { pos: 0.6, color: '#00897B' },
+            { pos: 0.8, color: '#26A69A' },
+            { pos: 1.0, color: '#80CBC4' }
+          ],
+          nodeColor: '#B2DFDB',
+          branchNodeColor: '#00796B'
+        },
+        purple: {
+          baseColor: '#4A148C',
+          gradient: [
+            { pos: 0.0, color: '#4A148C' },
+            { pos: 0.3, color: '#6A1B9A' },
+            { pos: 0.6, color: '#8E24AA' },
+            { pos: 0.8, color: '#AB47BC' },
+            { pos: 1.0, color: '#CE93D8' }
+          ],
+          nodeColor: '#E1BEE7',
+          branchNodeColor: '#7B1FA2'
+        },
+        golden: {
+          baseColor: '#6D4C41',
+          gradient: [
+            { pos: 0.0, color: '#6D4C41' },
+            { pos: 0.3, color: '#8D6E63' },
+            { pos: 0.6, color: '#BF9D7E' },
+            { pos: 0.8, color: '#D4B08C' },
+            { pos: 1.0, color: '#F9CC89' }
+          ],
+          nodeColor: '#FFF8E1',
+          branchNodeColor: '#FFB300'
+        },
+        redwood: {
+          baseColor: '#5D1B0B',
+          gradient: [
+            { pos: 0.0, color: '#5D1B0B' },
+            { pos: 0.3, color: '#7F2B11' },
+            { pos: 0.6, color: '#A23B1A' },
+            { pos: 0.8, color: '#C75C37' },
+            { pos: 1.0, color: '#E69B7B' }
+          ],
+          nodeColor: '#FFCCBC',
+          branchNodeColor: '#BF360C'
+        },
+        spring: {
+          baseColor: '#558B2F',
+          gradient: [
+            { pos: 0.0, color: '#558B2F' },
+            { pos: 0.3, color: '#7CB342' },
+            { pos: 0.6, color: '#9CCC65' },
+            { pos: 0.8, color: '#C5E1A5' },
+            { pos: 1.0, color: '#F1F8E9' }
+          ],
+          nodeColor: '#F1F8E9',
+          branchNodeColor: '#8BC34A'
+        }
+      };
+
+      const customColorSchemes = [
+        { name: 'Earth', colors: ['#543005', '#8c510a', '#bf812d', '#dfc27d', '#f6e8c3'] },
+        { name: 'Blues', colors: ['#0d46a0', '#2171b5', '#4292c6', '#6baed6', '#9ecae1'] },
+        { name: 'GreenYellow', colors: ['#276419', '#4d9221', '#7fbc41', '#b8e186', '#e6f5d0'] },
+        { name: 'Purples', colors: ['#4a1486', '#6a51a3', '#807dba', '#9e9ac8', '#bcbddc'] },
+        { name: 'Reds', colors: ['#7f0000', '#b30000', '#d7301f', '#ef6548', '#fc8d59'] }
+      ];
+
+      const updateConfig = (key, value) => {
+        setConfig(prev => ({ ...prev, [key]: value }));
+      };
+
+      const getColorFromGradient = (depth, maxDepth) => {
+        const scheme = colorSchemes[config.colorScheme];
+        const normalizedDepth = Math.min(1, depth / maxDepth);
+
+        let lowerStop = scheme.gradient[0];
+        let upperStop = scheme.gradient[scheme.gradient.length - 1];
+
+        for (let i = 0; i < scheme.gradient.length - 1; i++) {
+          if (normalizedDepth >= scheme.gradient[i].pos && normalizedDepth <= scheme.gradient[i + 1].pos) {
+            lowerStop = scheme.gradient[i];
+            upperStop = scheme.gradient[i + 1];
+            break;
+          }
+        }
+
+        const range = upperStop.pos - lowerStop.pos;
+        const normalizedPos = range === 0 ? 0 : (normalizedDepth - lowerStop.pos) / range;
+
+        const lowerRGB = hexToRgb(lowerStop.color);
+        const upperRGB = hexToRgb(upperStop.color);
+
+        const r = Math.round(lowerRGB.r + normalizedPos * (upperRGB.r - lowerRGB.r));
+        const g = Math.round(lowerRGB.g + normalizedPos * (upperRGB.g - lowerRGB.g));
+        const b = Math.round(lowerRGB.b + normalizedPos * (upperRGB.b - lowerRGB.b));
+
+        return `rgb(${r}, ${g}, ${b})`;
+      };
+
+      const hexToRgb = (hex) => {
+        const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+        hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+      };
+
+      const createCustomColorScheme = (index) => {
+        const customScheme = customColorSchemes[index % customColorSchemes.length];
+        const colors = customScheme.colors;
+
+        const gradient = colors.map((color, i) => ({
+          pos: i / (colors.length - 1),
+          color
+        }));
+
+        return {
+          baseColor: colors[0],
+          gradient,
+          nodeColor: '#ffffff',
+          branchNodeColor: colors[1]
+        };
+      };
+
+      React.useEffect(() => {
+        customColorSchemes.forEach((scheme, index) => {
+          colorSchemes[`custom${index + 1}`] = createCustomColorScheme(index);
+        });
+      }, []);
+
+      React.useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const newSvgPaths = [];
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.lineJoin = 'round';
+
+        // Apply zoom
+        const zoom = config.zoomLevel;
+        ctx.scale(zoom, zoom);
+        ctx.translate((1 - zoom) * config.canvasWidth / (2 * zoom), (1 - zoom) * config.canvasHeight / (2 * zoom));
+
+        ctx.fillStyle = config.bgColor;
+        ctx.fillRect(0, 0, config.canvasWidth, config.canvasHeight);
+        newSvgPaths.push(`<rect x="0" y="0" width="${config.canvasWidth}" height="${config.canvasHeight}" fill="${config.bgColor}"/>`);
+
+        // Adaptive scaling for deeper levels
+        const depthScale = Math.min(1.5, 1 + (config.maxDepthRender - 18) / 50);
+        const scaledStemLength = config.stemLength * depthScale;
+        const scaledInitialLength = config.initialLength * depthScale;
+
+        if (config.maxDepthRender > 50) {
+          console.warn("High maxDepthRender may impact performance. Consider increasing minBranchLength or using zoom.");
+        }
+
+        if (config.survivalProb.length !== config.branchingPattern.length) {
+          console.warn(`Survival probability array length (${config.survivalProb.length}) does not match branching pattern length (${config.branchingPattern.length}).`);
+        }
+
+        const drawTrunkTexture = (x1, y1, x2, y2, width, color) => {
+          if (!config.trunkTextureEnabled) return;
+
+          const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
+          gradient.addColorStop(0, color);
+          gradient.addColorStop(1, color);
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = width;
+          ctx.lineCap = 'round';
+          ctx.stroke();
+          newSvgPaths.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" stroke-linecap="round"/>`);
+
+          const trunkLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+          const numLines = Math.floor(trunkLength / 10);
+          const angle = Math.atan2(y2 - y1, x2 - x1);
+          const perpendicularAngle = angle + Math.PI / 2;
+
+          const rgbColor = hexToRgb(colorSchemes[config.colorScheme].baseColor);
+          const darkerColor = `rgba(${Math.max(0, rgbColor.r - 20)}, ${Math.max(0, rgbColor.g - 20)}, ${Math.max(0, rgbColor.b - 20)}, 0.4)`;
+
+          ctx.strokeStyle = darkerColor;
+          ctx.lineWidth = 1;
+
+          for (let i = 0; i < numLines; i++) {
+            const t = i / numLines;
+            const pointX = x1 + t * (x2 - x1);
+            const pointY = y1 + t * (y2 - y1);
+
+            const lineLength = width * 0.3 * (Math.random() * 0.5 + 0.5);
+            const offsetX = Math.cos(perpendicularAngle) * lineLength * (Math.random() > 0.5 ? 1 : -1);
+            const offsetY = Math.sin(perpendicularAngle) * lineLength * (Math.random() > 0.5 ? 1 : -1);
+
+            ctx.beginPath();
+            ctx.moveTo(pointX, pointY);
+            ctx.lineTo(pointX + offsetX, pointY + offsetY);
+            ctx.stroke();
+            newSvgPaths.push(`<line x1="${pointX}" y1="${pointY}" x2="${pointX + offsetX}" y2="${pointY + offsetY}" stroke="${darkerColor}" stroke-width="1"/>`);
+          }
+        };
+
+        const drawBranch = (startX, startY, endX, endY, width, color, isPruned = false) => {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(endX, endY);
+          ctx.strokeStyle = isPruned ? config.pruneColor : color;
+          ctx.lineWidth = width;
+          ctx.stroke();
+          newSvgPaths.push(`<line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="${isPruned ? config.pruneColor : color}" stroke-width="${width}"/>`);
+        };
+
+        const drawNode = (x, y, radius, color, isBranchNode = false, isPruned = false) => {
+          if (!config.showNodes) return;
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = isPruned ? config.pruneColor : color;
+          ctx.fill();
+          newSvgPaths.push(`<circle cx="${x}" cy="${y}" r="${radius}" fill="${isPruned ? config.pruneColor : color}"/>`);
+
+          if (isBranchNode && config.highlightBranchNodes && !isPruned) {
+            ctx.lineWidth = 0.5;
+            ctx.strokeStyle = '#ffffff';
+            ctx.stroke();
+            newSvgPaths.push(`<circle cx="${x}" cy="${y}" r="${radius}" fill="none" stroke="#ffffff" stroke-width="0.5"/>`);
+          }
+        };
+
+        const calculateBranchEndpoint = (startX, startY, angle, length) => {
+          const radians = angle * Math.PI / 180;
+          const endX = startX + Math.sin(radians) * length;
+          const endY = startY - Math.cos(radians) * length;
+          return { x: endX, y: endY };
+        };
+
+        const shuffleArray = (array) => {
+          for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+          }
+          return array;
+        }
+        const nodeCache = new Map();
+
+
+        const drawTree = (startX, startY, length, width, angle, depth, nodeId = 0, isPruned = false, pass = "pruned") => {
+          if (depth >= config.maxDepthRender || length < config.minBranchLength) {
+            return;
+          }
+
+          const cacheKey = `${Math.round(startX)},${Math.round(startY)},${Math.round(length)},${Math.round(angle)},${pass}`;
+          if (nodeCache.has(cacheKey)) {
+            return;
+          }
+          nodeCache.set(cacheKey, true);
+
+          const branchFactor = depth < config.branchingPattern.length
+            ? config.branchingPattern[depth]
+            : 1;
+
+          let lengthDecay = config.lengthDecay;
+          if (config.acceleratedDecay) {
+            const depthFactor = Math.min(1, depth / 10);
+            lengthDecay = config.lengthDecay * (1 - 0.3 * depthFactor);
+          }
+
+          const nextLength = length * lengthDecay;
+          const nextWidth = Math.max(0.5, width * config.widthDecay);
+
+          const maxDepth = Math.min(config.branchingPattern.length, config.maxDepthRender);
+          const branchColor = getColorFromGradient(depth, maxDepth);
+
+          let survivingBranches = branchFactor;
+          let prunedBranches = [];
+
+          if (config.showPruning && depth < config.survivalProb.length && branchFactor > 1) {
+            const survivalProbability = config.survivalProb[depth];
+            for (let i = 0; i < branchFactor; i++) {
+              if (Math.random() >= survivalProbability) {
+                prunedBranches.push(i);
+              }
+            }
+          }
+
+          if (branchFactor === 1) {
+            const variation = (Math.random() - 0.5) * 5;
+            const nextAngle = angle + variation;
+
+            const endPoint = calculateBranchEndpoint(startX, startY, nextAngle, nextLength);
+            if ((pass === 'pruned' && isPruned) || (pass === 'surviving' && !isPruned)) {
+              drawBranch(startX, startY, endPoint.x, endPoint.y, nextWidth, branchColor, isPruned);
+              const scheme = colorSchemes[config.colorScheme];
+              drawNode(endPoint.x, endPoint.y, Math.max(1, config.nodeSize * 0.7 * (nextWidth / config.initialWidth)), scheme.nodeColor, false, isPruned);
+            }
+            drawTree(endPoint.x, endPoint.y, nextLength, nextWidth, nextAngle, depth + 1, nodeId * branchFactor, isPruned, pass);
+          } else {
+            const scheme = colorSchemes[config.colorScheme];
+            if ((pass === 'pruned' && isPruned) || (pass === 'surviving' && !isPruned)) {
+              drawNode(startX, startY, Math.max(1.5, config.nodeSize * (width / config.initialWidth)), scheme.branchNodeColor, true, isPruned);
+            }
+            let baseAngleSpread = config.baseAngle;
+            if (branchFactor > 3) {
+              baseAngleSpread = config.baseAngle * Math.log(branchFactor) / Math.log(3);
+            }
+
+            const depthScaleFactor = Math.max(0.4, 1 - depth * 0.05);
+            baseAngleSpread *= depthScaleFactor;
+
+            for (let i = 0; i < branchFactor; i++) {
+              let branchAngle;
+              if (branchFactor === 2) {
+                branchAngle = angle + (i === 0 ? -1 : 1) * baseAngleSpread;
+              } else {
+                const totalSpread = baseAngleSpread * 2;
+                branchAngle = angle - totalSpread / 2 + (totalSpread * i / (branchFactor - 1));
+              }
+
+              const endPoint = calculateBranchEndpoint(startX, startY, branchAngle, nextLength);
+
+              const isBranchPruned = config.showPruning && prunedBranches.includes(i);
+              if ((pass === 'pruned' && (isPruned || isBranchPruned)) || (pass === 'surviving' && !(isPruned || isBranchPruned))) {
+                drawBranch(startX, startY, endPoint.x, endPoint.y, nextWidth, branchColor, isPruned || isBranchPruned);
+                drawNode(endPoint.x, endPoint.y, Math.max(1, config.nodeSize * 0.7 * (nextWidth / config.initialWidth)), scheme.nodeColor, false, isPruned || isBranchPruned);
+              }
+              if (depth < 15 || i % Math.max(1, Math.floor(branchFactor / 3)) === 0) {
+                drawTree(endPoint.x, endPoint.y, nextLength, nextWidth, branchAngle, depth + 1, nodeId * branchFactor + i + 1, isPruned || isBranchPruned, pass);
+              }
+            }
+          }
+        };
+
+        const stemStartX = config.startX;
+        const stemStartY = config.startY;
+        const stemEndY = stemStartY - scaledStemLength;
+
+        const scheme = colorSchemes[config.colorScheme];
+        const stemColor = scheme.baseColor;
+
+        if (config.trunkTextureEnabled) {
+          drawTrunkTexture(stemStartX, stemStartY, stemStartX, stemEndY, config.stemWidth, stemColor);
+        } else {
+          drawBranch(stemStartX, stemStartY, stemStartX, stemEndY, config.stemWidth, getColorFromGradient(0, config.maxDepthRender));
+        }
+
+        drawNode(stemStartX, stemEndY, config.nodeSize * 1.2, scheme.branchNodeColor, true);
+
+        drawTree(stemStartX, stemEndY, scaledInitialLength, config.initialWidth, 0, 0, 0, true, 'pruned');
+        drawTree(stemStartX, stemEndY, scaledInitialLength, config.initialWidth, 0, 0, 0, false, 'surviving');
+        setSvgPaths(newSvgPaths);
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }, [config]);
+
+      const saveAsImage = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        // Default to PNG
+        const format = config.exportFormat;
+        let mimeType = 'image/png';
+        let ext = 'png';
+        let scale = 1;
+
+        if (format === 'png-2x') scale = 2;
+        if (format === 'png-4x') scale = 4;
+        if (format.startsWith('png')) {
+          if (scale === 1) {
+            // Save the current canvas directly
+            const dataUrl = canvas.toDataURL(mimeType);
+            const link = document.createElement('a');
+            link.download = `yggdrasil-tree-${format}.png`;
+            link.href = dataUrl;
+            link.click();
+          } else {
+            // For higher-res, draw to a temp canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = config.canvasWidth * scale;
+            exportCanvas.height = config.canvasHeight * scale;
+            const exportCtx = exportCanvas.getContext('2d');
+            exportCtx.scale(scale, scale);
+            exportCtx.drawImage(canvas, 0, 0);
+            const dataUrl = exportCanvas.toDataURL(mimeType);
+            const link = document.createElement('a');
+            link.download = `yggdrasil-tree-${format}.png`;
+            link.href = dataUrl;
+            link.click();
+          }
+        } else if (format === 'svg') {
+          const svgContent = `
+            <svg width="${config.canvasWidth}" height="${config.canvasHeight}" xmlns="http://www.w3.org/2000/svg">
+              ${svgPaths.join('\n')}
+            </svg>
+          `;
+          const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = 'yggdrasil-tree.svg';
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+        }
+      };
+
+      const saveSnapshots = async () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        setIsSavingGif(true);
+
+        // Helper to update config and wait for canvas to update
+        function updateConfigAndWait(newConfig) {
+          return new Promise(resolve => {
+            setConfig(prev => {
+              const updated = typeof newConfig === 'function' ? newConfig(prev) : { ...prev, ...newConfig };
+              return updated;
+            });
+            requestAnimationFrame(() => {
+              requestAnimationFrame(resolve);
+            });
+          });
+        }
+
+        // Helper to save the canvas as PNG at the selected scale
+        function saveCanvasAsPng(filename, scale = 1) {
+          if (scale === 1) {
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataUrl;
+            link.click();
+          } else {
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = config.canvasWidth * scale;
+            exportCanvas.height = config.canvasHeight * scale;
+            const exportCtx = exportCanvas.getContext('2d');
+            exportCtx.scale(scale, scale);
+            exportCtx.drawImage(canvas, 0, 0);
+            const dataUrl = exportCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = dataUrl;
+            link.click();
+          }
+        }
+
+        // Determine scale from exportFormat
+        let scale = 1;
+        if (config.exportFormat === 'png-2x') scale = 2;
+        if (config.exportFormat === 'png-4x') scale = 4;
+
+        // 1. Save the full tree (no pruning)
+        await updateConfigAndWait({ showPruning: false });
+        saveCanvasAsPng('yggdrasil-tree_000.png', scale);
+
+        // 2. Save 10 pruned trees
+        for (let i = 1; i <= 10; i++) {
+          await updateConfigAndWait({ showPruning: true, _pruneSeed: Math.random() });
+          const num = String(i).padStart(3, '0');
+          saveCanvasAsPng(`yggdrasil-tree_${num}.png`, scale);
+        }
+
+        setIsSavingGif(false);
+      };
+
+      return (
+        <div className="container mx-auto py-8">
+          <header className="mb-8">
+            <h1 className="text-4xl font-bold text-center text-gray-800">Yggdrasil Fractal Tree</h1>
+            <p className="text-center text-gray-600 mt-2">
+              An interactive fractal tree visualization inspired by the World Tree
+            </p>
+          </header>
+
+          <div className="flex flex-col xl:flex-row gap-8">
+            <div className="flex-1">
+              <canvas
+                ref={canvasRef}
+                width={config.canvasWidth}
+                height={config.canvasHeight}
+                className="w-full h-auto"
+              />
+              <div className="mt-4 flex justify-center gap-4">
+                <button
+                  onClick={saveAsImage}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                  Save as Image
+                </button>
+                <button
+                  onClick={saveSnapshots}
+                  className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors ${isSavingGif ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  disabled={isSavingGif}
+                >
+                  {isSavingGif ? 'Saving...' : 'Save Snapshots'}
+                </button>
+                <select
+                  value={config.exportFormat}
+                  onChange={(e) => updateConfig('exportFormat', e.target.value)}
+                  className="px-4 py-2 border rounded-md bg-white text-gray-800"
+                >
+                  <option value="png-1x">PNG (1x)</option>
+                  <option value="png-2x">PNG (2x)</option>
+                  <option value="png-4x">PNG (4x)</option>
+                  <option value="svg">SVG</option>
+                </select>
+              </div>
+
+              {/* Color Scheme Swatch Grid */}
+              <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
+                <h3 className="text-lg font-medium text-gray-700 mb-4 text-center">Color Schemes</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-6">
+                  {Object.keys(colorSchemes).map((scheme) => (
+                    <div
+                      key={scheme}
+                      className={`p-2 rounded-lg cursor-pointer transition-transform duration-200 ${config.colorScheme === scheme ? 'ring-2 ring-blue-500 scale-105' : 'hover:scale-105'}`}
+                      onClick={() => updateConfig('colorScheme', scheme)}
+                    >
+                      <div className="h-8 w-full rounded overflow-hidden flex">
+                        {colorSchemes[scheme].gradient.map((item, i) => (
+                          <div
+                            key={i}
+                            className="h-full flex-grow"
+                            style={{ backgroundColor: item.color }}
+                          />
+                        ))}
+                      </div>
+                      <div className="text-center text-xs mt-1 font-medium capitalize">
+                        {scheme}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <h3 className="text-lg font-medium text-gray-700 mb-4 text-center">Presets</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { name: 'Classic Tree', color: 'autumn', stemLength: 140, initialLength: 100, lengthDecay: 0.62, baseAngle: 35, trunkTextureEnabled: true },
+                    { name: 'Tall Pine', color: 'forest', stemLength: 160, initialLength: 90, lengthDecay: 0.58, baseAngle: 30, trunkTextureEnabled: true },
+                    { name: 'Cherry Blossom', color: 'cherry', stemLength: 232, initialLength: 78, lengthDecay: 0.83, baseAngle: 40, trunkTextureEnabled: true },
+                    { name: 'Wide Canopy', color: 'sunset', stemLength: 100, initialLength: 120, lengthDecay: 0.7, baseAngle: 45, trunkTextureEnabled: false },
+                    { name: 'Slender Willow', color: 'ocean', stemLength: 180, initialLength: 80, lengthDecay: 0.55, baseAngle: 25, trunkTextureEnabled: false },
+                    { name: 'Maple', color: 'maple', stemLength: 150, initialLength: 100, lengthDecay: 0.65, baseAngle: 35, trunkTextureEnabled: true, nodeSize: 5 }
+                  ].map(({ name, color, ...settings }) => (
+                    <button
+                      key={name}
+                      onClick={() => setConfig({ ...config, colorScheme: color, ...settings })}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm text-gray-700 transition-colors"
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="xl:w-1/3 bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-2xl font-semibold mb-4 text-gray-800">Controls</h2>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">Geometry</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Stem Length ({config.stemLength}px)</label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="300"
+                        step="1"
+                        value={config.stemLength}
+                        onChange={(e) => updateConfig('stemLength', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Initial Branch Length ({config.initialLength}px)</label>
+                      <input
+                        type="range"
+                        min="50"
+                        max="250"
+                        step="1"
+                        value={config.initialLength}
+                        onChange={(e) => updateConfig('initialLength', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Length Decay ({(config.lengthDecay * 100).toFixed(0)}%)</label>
+                      <input
+                        type="range"
+                        min="0.2"
+                        max="0.9"
+                        step="0.01"
+                        value={config.lengthDecay}
+                        onChange={(e) => updateConfig('lengthDecay', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Width Decay ({(config.widthDecay * 100).toFixed(0)}%)</label>
+                      <input
+                        type="range"
+                        min="0.3"
+                        max="0.9"
+                        step="0.01"
+                        value={config.widthDecay}
+                        onChange={(e) => updateConfig('widthDecay', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Branch Angle ({config.baseAngle}°)</label>
+                      <input
+                        type="range"
+                        min="10"
+                        max="75"
+                        step="1"
+                        value={config.baseAngle}
+                        onChange={(e) => updateConfig('baseAngle', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">Appearance</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Node Size ({config.nodeSize}px)</label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="12"
+                        step="0.1"
+                        value={config.nodeSize}
+                        onChange={(e) => updateConfig('nodeSize', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Color Scheme</label>
+                      <select
+                        value={config.colorScheme}
+                        onChange={(e) => updateConfig('colorScheme', e.target.value)}
+                        className="w-full px-3 py-2 border rounded-md"
+                      >
+                        {Object.keys(colorSchemes).map(scheme => (
+                          <option key={scheme} value={scheme}>{scheme.charAt(0).toUpperCase() + scheme.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Background Color</label>
+                      <input
+                        type="color"
+                        value={config.bgColor}
+                        onChange={(e) => updateConfig('bgColor', e.target.value)}
+                        className="w-full h-10 border rounded-md"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={config.showNodes}
+                        onChange={(e) => updateConfig('showNodes', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 text-sm text-gray-600">Show Nodes</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={config.highlightBranchNodes}
+                        onChange={(e) => updateConfig('highlightBranchNodes', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 text-sm text-gray-600">Highlight Branch Nodes</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={config.trunkTextureEnabled}
+                        onChange={(e) => updateConfig('trunkTextureEnabled', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 text-sm text-gray-600">Enable Trunk Texture</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={config.showPruning}
+                        onChange={(e) => updateConfig('showPruning', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 text-sm text-gray-600">Show Pruning</label>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">Performance</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Max Render Depth ({config.maxDepthRender})</label>
+                      <input
+                        type="range"
+                        min="8"
+                        max="128"
+                        step="1"
+                        value={config.maxDepthRender}
+                        onChange={(e) => updateConfig('maxDepthRender', parseInt(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Min Branch Length ({config.minBranchLength}px)</label>
+                      <input
+                        type="range"
+                        min="0.5"
+                        max="15"
+                        step="0.1"
+                        value={config.minBranchLength}
+                        onChange={(e) => updateConfig('minBranchLength', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600">Zoom Level ({config.zoomLevel.toFixed(2)}x)</label>
+                      <input
+                        type="range"
+                        min="1"
+                        max="4"
+                        step="0.1"
+                        value={config.zoomLevel}
+                        onChange={(e) => updateConfig('zoomLevel', parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={config.acceleratedDecay}
+                        onChange={(e) => updateConfig('acceleratedDecay', e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label className="ml-2 text-sm text-gray-600">Accelerated Decay</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer className="mt-8 text-center text-gray-600">
+            <p>Built with React & Tailwind CSS</p>
+            <p>Inspired by the mythological Yggdrasil, the World Tree</p>
+          </footer>
+        </div>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<EnhancedFractalTree />);
+  </script>
+</body>
+
+</html>
